@@ -2,7 +2,7 @@ import 'package:sql_pricelist/product.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 class DatabaseHelper{
-  
+
 
   //sqlite code
   static final _databaseName = "priceList.db";
