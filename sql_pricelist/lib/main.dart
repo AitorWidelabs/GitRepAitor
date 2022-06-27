@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:sql_pricelist/product.dart';
 import 'package:sql_pricelist/database_helper.dart';
-
+import 'package:http/http.dart' show get;
+import 'dart:convert';
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
@@ -130,7 +131,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       child: Text('Refresh'),
                       onPressed: () {
                         setState(() {
-                          _queryAll();
+                          downloadJSON();
                         });
                       },
                     );
@@ -306,4 +307,18 @@ class _MyHomePageState extends State<MyHomePage> {
     final rowsDeleted = await dbHelper.delete(id);
     _showMessageInScaffold('deleted $rowsDeleted row(s): row $id');
   }
+  Future<List<Product>?> downloadJSON() async {final jsonEndpoint =
+      "http://192.168.2.177/PHP/products";
+
+  final response = await get(Uri.parse(jsonEndpoint));
+  if (response.statusCode == 200) {
+    products.clear();
+    List productsJson = json.decode(response.body);
+    productsJson.forEach((row) => products.add(Product.fromJson(row)));
+    _showMessageInScaffold('Query done.');
+    setState(() {});
+  } else
+    throw Exception('We were not able to successfully download the json data.');
+  }
+
 }
