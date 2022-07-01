@@ -1,7 +1,11 @@
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
 import 'package:sql_pricelist/product.dart';
 import 'package:sql_pricelist/database_helper.dart';
 import 'package:http/http.dart' show get;
+import 'package:http/http.dart' as http;
+
 import 'dart:convert';
 void main() => runApp(MyApp());
 
@@ -115,7 +119,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     onPressed: () {
                       String name = nameController.text;
                       double miles = double.parse(milesController.text);
-                      _insert(name, miles);
+                      insertData(name, miles);
                     },
                   ),
                 ],
@@ -159,19 +163,16 @@ class _MyHomePageState extends State<MyHomePage> {
                         border: OutlineInputBorder(),
                         labelText: 'Product Name',
                       ),
-                      onChanged: (text) {
-                        if (text.length >= 2) {
-                          setState(() {
-                            _query(text);
-                          });
-                        } else {
-                          setState(() {
-                            productsByName.clear();
-                          });
-                        }
-                      },
+
                     ),
                     height: 100,
+                  ),
+                  ElevatedButton(
+                    child: Text('Refresh'),
+                    onPressed: () {
+                      String name = queryController.text;
+                      selectWhere( name);
+                    },
                   ),
                   Container(
                     height: 300,
@@ -234,7 +235,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       int id = int.parse(idUpdateController.text);
                       String name = nameUpdateController.text;
                       double miles = double.parse(milesUpdateController.text);
-                      _update(id, name, miles);
+                      update(id, name, miles);
                     },
                   ),
                 ],
@@ -257,7 +258,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: Text('Delete'),
                     onPressed: () {
                       int id = int.parse(idDeleteController.text);
-                      _delete(id);
+                      Delete(id);
                     },
                   ),
                 ],
@@ -308,7 +309,7 @@ class _MyHomePageState extends State<MyHomePage> {
     _showMessageInScaffold('deleted $rowsDeleted row(s): row $id');
   }
   Future<List<Product>?> downloadJSON() async {final jsonEndpoint =
-      "http://192.168.2.177/PHP/products";
+      "http://192.168.2.176";
 
   final response = await get(Uri.parse(jsonEndpoint));
   if (response.statusCode == 200) {
@@ -320,5 +321,62 @@ class _MyHomePageState extends State<MyHomePage> {
   } else
     throw Exception('We were not able to successfully download the json data.');
   }
+  Future<List<Product>?> selectWhere(name) async {
+    final jsonEndpoint =
+        "http://192.168.2.176";
+    final response = await http.post(Uri.parse(jsonEndpoint), body:
+    {
+      "Method": "Query",
+      "Product_name": name,
+    });
+    if (response.statusCode == 200) {
+      productsByName.clear();
+      List productsJson = json.decode(response.body);
+      productsJson.forEach((row) => productsByName.add(Product.fromJson(row)));
+      _showMessageInScaffold('Query done.');
+      setState(() {});
+    } else
+      throw Exception('We were not able to successfully download the json data.');
+  }
+  void insertData(name, price) async {
+    final jsonEndpoint =
+        "http://192.168.2.176";
+    final response = await http.post(Uri.parse(jsonEndpoint), body:
+        {"Method": "Insert",
+        "Product_name" : name,
+          "Product_price": price.toString(),
+        });
+  if(response.statusCode == 200)
+    _showMessageInScaffold('inserted row');
+  else
+    throw Exception('We were not able to successfully download the json data.');
+  }
+  void update(id, name, price) async{
+    final jsonEndpoint =
+        "http://192.168.2.176";
+    final response = await http.post(Uri.parse(jsonEndpoint), body:
+    { "Method": "Update",
+      "Product_id" : id.toString(),
+      "Product_name" : name,
+      "Product_price": price.toString(),
+    });
+    if(response.statusCode == 200)
+      _showMessageInScaffold('Updated row');
+    else
+      throw Exception('We were not able to successfully download the json data.');
+  }
+  void Delete(id) async{
+    final jsonEndpoint =
+        "http://192.168.2.176";
+    final response = await http.post(Uri.parse(jsonEndpoint), body:
+    {"Method": "Delete",
+      "Product_id" : id.toString(),
+    });
+    if(response.statusCode == 200)
+      _showMessageInScaffold('deleted row');
+    else
+      throw Exception('We were not able to successfully download the json data.');
+  }
+
 
 }
